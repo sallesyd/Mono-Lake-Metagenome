@@ -9,8 +9,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{bash, eval = F}
+Download genomes from NCBI genbank
 
+```{bash, eval = F}
+ncbi-genome-download -g cyanobium bacteria
+ncbi-genome-download -g cyanobium -s genbank bacteria
 ```
 
 
