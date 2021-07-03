@@ -164,6 +164,19 @@ Generated the EDITED_CYANOBIUM_PAN project directory
 ```{bash, eval=F}
 anvi-pan-genome -g EDITED-CYANOBIUM_GENOMES.db --project-name Edited_Cyanobium_Pan --output-dir “edited_cyanobium_pan” --num-threads 4 --minbit 0.5 --mcl-inflation 6 --use-ncbi-blast
 ```
+
+Creating a phylogenetic tree of cyanobium genomes + MAGS using GToTree:
+
+Creating a list of paths to contig fastas we will use:
+```{bash, eval=F}
+cut -f 2 edited_cyanobium_fa.txt | grep -v path > gtotree_fasta_files.txt
+```
+Creating a list of names that gtotree will use 
+```{bash, eval=F}
+cut -f 1 edited_cyanobium_fa.txt | grep -v name > gtotree_accessions.txt
+```
+
+
 Useful commands: 
 (put this in a seperate screen to run:
 screen -r to resume active session
