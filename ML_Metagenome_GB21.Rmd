@@ -16,5 +16,82 @@ ncbi-genome-download -g cyanobium bacteria
 ncbi-genome-download -g cyanobium -s genbank bacteria
 ```
 
+Preprocessing from genbank files to fasta + gene calls + function using anvio-script-process-genbank
+Ran in both genbank and refseq folders to capture all the files
+```{bash, eval=F}
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+for prefix in $(ls) 
+do anvi-script-process-genbank -i $prefix/*.gz -O $prefix
+done
+```
+
+
+Creating the cyanobium_fa.txt file with names and paths of all relevant files for pangenome workflow
+```{bash, eval=F}
+ls */bacteria/*.fa  | awk -F "-" 'BEGIN {print "name\tpath\texternal_gene_calls\tgene_functional_annotation"}{print $1 "\t" $0 "\t" $1 "-external-gene-calls.txt\t" $1 "-external-functions.txt"}' | sed "s,^[a-z/]*/,," > cyanobium_fa.txt
+```
+
+Removing junky genomes
+```{bash, eval=F}
+grep "contains characters that are not" 00_LOGS_pan_workflow/*-anvi_gen_contigs_database.log
+
+```
+Output:
+GCA_002737505.1
+GCA_015207535.1
+GCA_015207615.1
+GCF_015207535.1
+GCF_015207615.1
+
+removed in vim using dd
+
+config_pangenomics.json file (added in 'ignore-internal-stop-codons' flag)
+```{bash, eval=F}
+{
+    "workflow_name": "pangenomics",
+    "config_version": "2",
+    "project_name": "CYANOBIUM-NCBI",
+    "external_genomes": "cyanobium-genbank30-external-genomes.txt",
+    "fasta_txt": "cyanobium_fa.txt",
+    "max_threads": 2,
+    "anvi_gen_contigs_database": {
+        "--ignore-internal-stop-codons": true
+    },
+    "output_dirs": {
+        "FASTA_DIR": "01_FASTA_contigs_workflow",
+        "CONTIGS_DIR": "02_CONTIGS_contigs_workflow",
+        "LOGS_DIR": "00_LOGS_pan_workflow"
+    }
+}
+
+```
+
+
+Anvio doesn't like using PGAP instead of prodigal 
+But we do!
+So we need to convince Anvio to accept our PGAP gene calls from NCBI genomes, which we did using DAN'S BIG BOY HACK:
+
+```{bash, eval=F}
+sed -i"" 's/NCBI_PGAP/prodigal/; s/v4.6/v2.6.3/' */bacteria/*gene-calls.txt
+```
+Then we reran the first part of the pangenomics workflow and exited at pangenome step (we want to include MAGS in our pangenome):
+```{bash, eval=F}
+anvi-run-workflow -w pangenomics -c config_pangenomics.json
+```
+
+Creating hmms (Hidden Markov Model) for single copy genes:
+```{bash, eval=F}
+for contigs in $(ls 02*/*.db) ; do anvi-run-hmms -c $contigs -T 4; done && anvi-gen-genomes-storage 
+```
+Creating a combined CYANOBIUM-GENOMES.db file with MAGs and genomes:
+```{bash, eval=F}
+anvi-gen-genomes-storage -i dspeth_mags_external_genome.txt -e cyanobium-genbank30-external-genomes.txt -o CYANOBIUM_GENOMES.db
+
+```
+(put this in a seperate screen to run:
+screen -r to resume active session
+ctrl-a d to detach from a session
+ctrl-a k to kill a session
+screen to make new session)
+
+`top` to see what is running in a bash session 
