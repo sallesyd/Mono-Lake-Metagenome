@@ -83,11 +83,27 @@ Creating hmms (Hidden Markov Model) for single copy genes:
 ```{bash, eval=F}
 for contigs in $(ls 02*/*.db) ; do anvi-run-hmms -c $contigs -T 4; done && anvi-gen-genomes-storage 
 ```
+
+Patch because MAGs used different version of COG (14) than our genomes:
+```{bash, eval=F}
+for db in $(cut -f 5 dspeth_mags_external_genome.txt | tail -2 ); do anvi-run-ncbi-cogs -c $db -T 4; done
+```
+
 Creating a combined CYANOBIUM-GENOMES.db file with MAGs and genomes:
 ```{bash, eval=F}
 anvi-gen-genomes-storage -i dspeth_mags_external_genome.txt -e cyanobium-genbank30-external-genomes.txt -o CYANOBIUM_GENOMES.db
 
 ```
+
+Running anvi-pan-genomes:
+
+```{bash, eval=F}
+anvi-pan-genome -g CYANOBIUM_GENOMES.db --project-name Cyanobium_Pan --output-dir “cyanobium_pan” --num-threads 4 --minbit 0.5 --mcl-inflation 6 --use-ncbi-blast
+```
+
+
+
+
 (put this in a seperate screen to run:
 screen -r to resume active session
 ctrl-a d to detach from a session
