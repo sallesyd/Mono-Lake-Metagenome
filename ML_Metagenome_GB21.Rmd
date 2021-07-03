@@ -176,6 +176,24 @@ Creating a list of names that gtotree will use
 cut -f 1 edited_cyanobium_fa.txt | grep -v name > gtotree_accessions.txt
 ```
 
+unwrapping wrapped MAG fasta files
+```{bash, eval=F}
+sed '/>/s/^/@/; />/s/$/@/' cyanobium_MAGs-contigs.fa | tr -d '\n' | tr '@' '\n' | grep -v '^$' > cyanobium_MAGs-contigs_unwrapped.fa 
+```
+
+separating MAGs into different files 
+```{bash, eval=F}
+grep -A 1 MLW cyanobium_MAGs-contigs_unwrapped.fa > cyanobium_MLW_MAG-contigs.fa
+
+grep -A 1 MLSC cyanobium_MAGs-contigs_unwrapped.fa > cyanobium_MLSC_MAG-contigs.fa
+```
+
+making gtotree have mags too
+```{bash, eval=F}
+ls | grep MAG- >> mag_files.txt
+cat gtotree_fasta_files.txt mag_files.txt > gtotree_fastas_mags.txt
+
+```
 
 Useful commands: 
 (put this in a seperate screen to run:
