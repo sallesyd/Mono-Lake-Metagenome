@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Download genomes from NCBI genbank + refseq
+Download genomes from NCBI genbank + refseq that were then placed in the directories "genbank" and "refseq"
 
 ```{bash, eval = F}
 ncbi-genome-download -g cyanobium bacteria
@@ -18,6 +18,7 @@ ncbi-genome-download -g cyanobium -s genbank bacteria
 
 Preprocessing from genbank files to fasta + gene calls + function using anvio-script-process-genbank
 Ran in both genbank and refseq folders to capture all the files
+Generated the 00_LOGS_pan_workflow directory 
 ```{bash, eval=F}
 
 for prefix in $(ls) 
@@ -31,7 +32,7 @@ Creating the cyanobium_fa.txt file with names and paths of all relevant files fo
 ls */bacteria/*.fa  | awk -F "-" 'BEGIN {print "name\tpath\texternal_gene_calls\tgene_functional_annotation"}{print $1 "\t" $0 "\t" $1 "-external-gene-calls.txt\t" $1 "-external-functions.txt"}' | sed "s,^[a-z/]*/,," > cyanobium_fa.txt
 ```
 
-Removing junky genomes
+Removing junky genomes that had no gene calls
 ```{bash, eval=F}
 grep "contains characters that are not" 00_LOGS_pan_workflow/*-anvi_gen_contigs_database.log
 
@@ -75,16 +76,18 @@ So we need to convince Anvio to accept our PGAP gene calls from NCBI genomes, wh
 sed -i"" 's/NCBI_PGAP/prodigal/; s/v4.6/v2.6.3/' */bacteria/*gene-calls.txt
 ```
 Then we reran the first part of the pangenomics workflow and exited at pangenome step (we want to include MAGS in our pangenome):
+This generated the 02_CONTIGS_contigs_workflow folder and the cyanobium-genbank30-external-genomes.txt file
 ```{bash, eval=F}
 anvi-run-workflow -w pangenomics -c config_pangenomics.json
 ```
 
 Creating hmms (Hidden Markov Model) for single copy genes:
 ```{bash, eval=F}
-for contigs in $(ls 02*/*.db) ; do anvi-run-hmms -c $contigs -T 4; done && anvi-gen-genomes-storage 
+for contigs in $(ls 02*/*.db) ; do anvi-run-hmms -c $contigs -T 4; done 
 ```
 
 Patch because MAGs used different version of COG (14) than our genomes:
+(generated the file mags_genecalls.txt)
 ```{bash, eval=F}
 for db in $(cut -f 5 dspeth_mags_external_genome.txt | tail -2 ); do anvi-run-ncbi-cogs -c $db -T 4; done
 ```
@@ -96,14 +99,72 @@ anvi-gen-genomes-storage -i dspeth_mags_external_genome.txt -e cyanobium-genbank
 ```
 
 Running anvi-pan-genomes:
-
+Generated the CYANOBIUM_PAN project directory
 ```{bash, eval=F}
 anvi-pan-genome -g CYANOBIUM_GENOMES.db --project-name Cyanobium_Pan --output-dir “cyanobium_pan” --num-threads 4 --minbit 0.5 --mcl-inflation 6 --use-ncbi-blast
 ```
 
+To access the interactive server, we had to create ports for ocean and log in with them
+```{bash, eval=F}
+ssh -L 8080:localhost:8400 yourname@ocean.caltech.edu
+```
+Displaying the pangenome:
+
+```{bash, eval=F}
+anvi-display-pan -p CYANOBIUM-PAN/Cyanobium_Pan-PAN.db -g CYANOBIUM_GENOMES.db
+```
+
+Genomes we decided to cull after looking at stats on the interactive pangenome:
+GCA2691945: low total length, low completion
+GCA002714405: low total length, low completion
+GCA002687115: low completion, high singletons
+GCA002701375: very high singletons, low-ish completion
+GCA002700895: low completion, low total length
+GCA00278955: low completion, low total length
+GCA01419165: low completion, missing many core gene clusters
 
 
+Now, we are creating a new pangenome with culled genomes:
+1) created a new textfile in vim called edited_cyanobium_fa.txt from cyanobium_fa.txt with the above genomes removed completely 
+2) created a new edited_config_pangenomics.json file 
+3) created a new cyanobium-edited-external-genomes.txt
+(to find and delete in nano, ctrl-w, type pattern, ctrl-k to delete the line containing the pattern. To do the same thing in vim, sacrifice your firstborn child and weep). 
+```{bash, eval=F}
+#edited_config_pangenomics.json:#
 
+{
+    "workflow_name": "pangenomics",
+    "config_version": "2",
+    "project_name": "CYANOBIUM-NCBI-EDIT",
+    "external_genomes": "cyanobium-edited-external-genomes.txt",
+    "fasta_txt": "edited_cyanobium_fa.txt",
+    "max_threads": 2,
+    "anvi_gen_contigs_database": {
+        "--ignore-internal-stop-codons": true
+    },
+    "output_dirs": {
+        "FASTA_DIR": "01_FASTA_contigs_workflow_edited",
+        "CONTIGS_DIR": "02_CONTIGS_contigs_workflow_edited",
+        "LOGS_DIR": "00_LOGS_pan_workflow_edited"
+    }
+}
+
+
+```
+
+
+Creating a new combined EDITED-CYANOBIUM-GENOMES.db file with MAGs and reduced genomes:
+```{bash, eval=F}
+anvi-gen-genomes-storage -i dspeth_mags_external_genome.txt -e cyanobium-edited-external-genomes.txt -o EDITED-CYANOBIUM_GENOMES.db
+
+```
+
+rerunning anvi-pan-genomes without crap genoems:
+Generated the EDITED_CYANOBIUM_PAN project directory
+```{bash, eval=F}
+anvi-pan-genome -g EDITED-CYANOBIUM_GENOMES.db --project-name Edited_Cyanobium_Pan --output-dir “edited_cyanobium_pan” --num-threads 4 --minbit 0.5 --mcl-inflation 6 --use-ncbi-blast
+```
+Useful commands: 
 (put this in a seperate screen to run:
 screen -r to resume active session
 ctrl-a d to detach from a session
