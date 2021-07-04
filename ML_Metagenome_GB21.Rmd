@@ -165,17 +165,35 @@ Generated the EDITED_CYANOBIUM_PAN project directory
 anvi-pan-genome -g EDITED-CYANOBIUM_GENOMES.db --project-name Edited_Cyanobium_Pan --output-dir “edited_cyanobium_pan” --num-threads 4 --minbit 0.5 --mcl-inflation 6 --use-ncbi-blast
 ```
 
+<<<<<<< HEAD
 Creating a phylogenetic tree of cyanobium genomes + MAGS using GToTree:
 
+=======
+Displaying the pangenome after the edited version
+```{bash, eval=F}
+anvi-display-pan -p EDITED-CYANOBIUM-PAN/Edited_Cyanobium_Pan-PAN.db -g EDITED-CYANOBIUM_GENOMES.db
+```
+
+
+## GToTree
+
+###Creating a phylogenetic tree of cyanobium genomes + MAGS using GToTree:
+>>>>>>> 943cd17480b4ebac49baa902a3fcf17bfa456234
 Creating a list of paths to contig fastas we will use:
 ```{bash, eval=F}
 cut -f 2 edited_cyanobium_fa.txt | grep -v path > gtotree_fasta_files.txt
 ```
+<<<<<<< HEAD
 Creating a list of names that gtotree will use 
+=======
+
+Creating a list of names that gtotree will use
+>>>>>>> 943cd17480b4ebac49baa902a3fcf17bfa456234
 ```{bash, eval=F}
 cut -f 1 edited_cyanobium_fa.txt | grep -v name > gtotree_accessions.txt
 ```
 
+<<<<<<< HEAD
 unwrapping wrapped MAG fasta files
 ```{bash, eval=F}
 sed '/>/s/^/@/; />/s/$/@/' cyanobium_MAGs-contigs.fa | tr -d '\n' | tr '@' '\n' | grep -v '^$' > cyanobium_MAGs-contigs_unwrapped.fa 
@@ -196,6 +214,35 @@ cat gtotree_fasta_files.txt mag_files.txt > gtotree_fastas_mags.txt
 ```
 
 Useful commands:  
+=======
+Unwrapping wrapped MAG fasta files
+```{bash, eval=F}
+sed ‘/>/s/^/@/; />/s/$/@/’ cyanobium_MAGs-contigs.fa | tr -d ‘\n’ | tr ‘@’ ‘\n’ | grep -v ‘^$’ > cyanobium_MAGs-contigs_unwrapped.fa
+```
+
+Separating MAGs into different files
+```{bash, eval=F}
+grep -A 1 MLW cyanobium_MAGs-contigs_unwrapped.fa > cyanobium_MLW_MAG-contigs.fa
+grep -A 1 MLSC cyanobium_MAGs-contigs_unwrapped.fa > cyanobium_MLSC_MAG-contigs.fa
+```
+
+Making gtotree have mags too
+```{bash, eval=F}
+ls | grep MAG- >> mag_files.txt
+cat gtotree_fasta_files.txt mag_files.txt > gtotree_fastas_mags.txt
+```
+
+This creates a phylogenetic tree based on Cyanobacteria HMM's
+```{bash, eval=F}
+GToTree -f gtotree_fastas_mags.txt -H Cyanobacteria -t -L Species,Strain -j 4 -o cyanobium_gtotree
+```
+
+Link to GToTree Github page: https://github.com/AstrobioMike/GToTree/wiki/example-usage
+
+
+## Generally Useful commands: 
+```{}
+>>>>>>> 943cd17480b4ebac49baa902a3fcf17bfa456234
 (put this in a seperate screen to run:
 screen -r to resume active session
 ctrl-a d to detach from a session
