@@ -108,6 +108,8 @@ To access the interactive server, we had to create ports for ocean and log in wi
 ```{bash, eval=F}
 ssh -L 8080:localhost:8400 yourname@ocean.caltech.edu
 ```
+Sydney: 8455
+
 Displaying the pangenome:
 
 ```{bash, eval=F}
@@ -238,6 +240,12 @@ GToTree -f gtotree_fastas_mags.txt -H Cyanobacteria -t -L Species,Strain -j 4 -o
 ```
 
 Link to GToTree Github page: https://github.com/AstrobioMike/GToTree/wiki/example-usage
+To visulaize the phylogenetic  tree: https://itol.embl.de/
+
+This is creating a text file to put the phylogenetic tree that we created with GToTree in a format that anvio can read
+```{bash, eval=F}
+vi cyanobium_external_tree.txt
+```
 
 
 ## Generally Useful commands: 
@@ -248,5 +256,7 @@ screen -r to resume active session
 ctrl-a d to detach from a session
 ctrl-a k to kill a session
 screen to make new session)
+
+cat cyanobium_gtotree.tre | pbcopy # print contents of a file and send it to your copy/paste board
 
 `top` to see what is running in a bash session 
