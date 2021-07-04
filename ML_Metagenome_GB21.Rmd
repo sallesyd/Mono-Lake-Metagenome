@@ -195,7 +195,7 @@ cat gtotree_fasta_files.txt mag_files.txt > gtotree_fastas_mags.txt
 
 ```
 
-Useful commands: 
+Useful commands:  
 (put this in a seperate screen to run:
 screen -r to resume active session
 ctrl-a d to detach from a session
