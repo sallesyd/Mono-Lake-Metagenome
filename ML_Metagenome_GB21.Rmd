@@ -214,6 +214,12 @@ GToTree -f gtotree_fastas_mags.txt -H Cyanobacteria -t -L Species,Strain -j 4 -o
 Link to GToTree Github page: https://github.com/AstrobioMike/GToTree/wiki/example-usage
 
 
+# Identifying Gene Clusters of Interest
+
+GCA_007694915 is the most closely related genome from gene similarity to the water and sediment metagenomes.
+
+
+
 ## Generally Useful commands: 
 ```{}
 (put this in a seperate screen to run:
