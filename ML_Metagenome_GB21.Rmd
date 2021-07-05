@@ -1,6 +1,6 @@
 ---
 title: "ML_Metagenome_GB21"
-author: "Sydney Salley, Maggie Weng, Patrick Thieringer"
+author: "Sydney Salley"
 date: "7/2/2021"
 output: html_document
 ---
@@ -9,45 +9,43 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Genome Data-Mining
-
-### Download genomes from NCBI genbank + refseq that were then placed in the directories "genbank" and "refseq"
+Download genomes from NCBI genbank + refseq that were then placed in the directories "genbank" and "refseq"
 
 ```{bash, eval = F}
 ncbi-genome-download -g cyanobium bacteria
 ncbi-genome-download -g cyanobium -s genbank bacteria
 ```
 
-### Preprocessing from genbank files to fasta + gene calls + function using anvio-script-process-genbank
+Preprocessing from genbank files to fasta + gene calls + function using anvio-script-process-genbank
 Ran in both genbank and refseq folders to capture all the files
 Generated the 00_LOGS_pan_workflow directory 
 ```{bash, eval=F}
+
 for prefix in $(ls) 
 do anvi-script-process-genbank -i $prefix/*.gz -O $prefix
 done
 ```
 
-### Creating the cyanobium_fa.txt file with names and paths of all relevant files for pangenome workflow
+
+Creating the cyanobium_fa.txt file with names and paths of all relevant files for pangenome workflow
 ```{bash, eval=F}
 ls */bacteria/*.fa  | awk -F "-" 'BEGIN {print "name\tpath\texternal_gene_calls\tgene_functional_annotation"}{print $1 "\t" $0 "\t" $1 "-external-gene-calls.txt\t" $1 "-external-functions.txt"}' | sed "s,^[a-z/]*/,," > cyanobium_fa.txt
 ```
 
-### Removing junky genomes that had no gene calls
+Removing junky genomes that had no gene calls
 ```{bash, eval=F}
 grep "contains characters that are not" 00_LOGS_pan_workflow/*-anvi_gen_contigs_database.log
-```
 
-```{bash, eval=F}
+```
 Output:
 GCA_002737505.1
 GCA_015207535.1
 GCA_015207615.1
 GCF_015207535.1
 GCF_015207615.1
-```
-Removed in vim using dd
 
-### Creating a .json file
+removed in vim using dd
+
 config_pangenomics.json file (added in 'ignore-internal-stop-codons' flag)
 ```{bash, eval=F}
 {
@@ -69,7 +67,7 @@ config_pangenomics.json file (added in 'ignore-internal-stop-codons' flag)
 
 ```
 
-### Editing our gene-calls.txt file
+
 Anvio doesn't like using PGAP instead of prodigal 
 But we do!
 So we need to convince Anvio to accept our PGAP gene calls from NCBI genomes, which we did using DAN'S BIG BOY HACK:
@@ -77,15 +75,13 @@ So we need to convince Anvio to accept our PGAP gene calls from NCBI genomes, wh
 ```{bash, eval=F}
 sed -i"" 's/NCBI_PGAP/prodigal/; s/v4.6/v2.6.3/' */bacteria/*gene-calls.txt
 ```
-
 Then we reran the first part of the pangenomics workflow and exited at pangenome step (we want to include MAGS in our pangenome):
-This generated the "02_CONTIGS_contigs_workflow" folder and the "cyanobium-genbank30-external-genomes.txt" file
-
+This generated the 02_CONTIGS_contigs_workflow folder and the cyanobium-genbank30-external-genomes.txt file
 ```{bash, eval=F}
 anvi-run-workflow -w pangenomics -c config_pangenomics.json
 ```
 
-### Creating hmms (Hidden Markov Model) for single copy genes:
+Creating hmms (Hidden Markov Model) for single copy genes:
 ```{bash, eval=F}
 for contigs in $(ls 02*/*.db) ; do anvi-run-hmms -c $contigs -T 4; done 
 ```
@@ -96,37 +92,31 @@ Patch because MAGs used different version of COG (14) than our genomes:
 for db in $(cut -f 5 dspeth_mags_external_genome.txt | tail -2 ); do anvi-run-ncbi-cogs -c $db -T 4; done
 ```
 
-### Creating a combined CYANOBIUM-GENOMES.db file with MAGs and genomes
+Creating a combined CYANOBIUM-GENOMES.db file with MAGs and genomes:
 ```{bash, eval=F}
 anvi-gen-genomes-storage -i dspeth_mags_external_genome.txt -e cyanobium-genbank30-external-genomes.txt -o CYANOBIUM_GENOMES.db
+
 ```
 
-### Running anvi-pan-genomes
+Running anvi-pan-genomes:
 Generated the CYANOBIUM_PAN project directory
 ```{bash, eval=F}
 anvi-pan-genome -g CYANOBIUM_GENOMES.db --project-name Cyanobium_Pan --output-dir “cyanobium_pan” --num-threads 4 --minbit 0.5 --mcl-inflation 6 --use-ncbi-blast
 ```
 
-### Accessing the Interactive Server
-We had to create ports for the Ocean server and log in with them
-Dan created these ports for us
+To access the interactive server, we had to create ports for ocean and log in with them
 ```{bash, eval=F}
-ssh -L 8080:localhost:8400 yourname@ocean.caltech.edu #change 'yourname' to  to the username generated from Caltech
+ssh -L 8080:localhost:8400 yourname@ocean.caltech.edu
 ```
-<<<<<<< HEAD
 Sydney: 8455
 
 Displaying the pangenome:
-=======
->>>>>>> 938775640687806dd16f83de3a1501e9420f2385
 
-## Displaying the pangenome:
 ```{bash, eval=F}
 anvi-display-pan -p CYANOBIUM-PAN/Cyanobium_Pan-PAN.db -g CYANOBIUM_GENOMES.db
 ```
 
-### Genomes we decided to cull after looking at stats on the interactive pangenome:
-```{bash,  eval=F}
+Genomes we decided to cull after looking at stats on the interactive pangenome:
 GCA2691945: low total length, low completion
 GCA002714405: low total length, low completion
 GCA002687115: low completion, high singletons
@@ -134,9 +124,9 @@ GCA002701375: very high singletons, low-ish completion
 GCA002700895: low completion, low total length
 GCA00278955: low completion, low total length
 GCA01419165: low completion, missing many core gene clusters
-```
 
-### Creating a new pangenome with culled genomes:
+
+Now, we are creating a new pangenome with culled genomes:
 1) created a new textfile in vim called edited_cyanobium_fa.txt from cyanobium_fa.txt with the above genomes removed completely 
 2) created a new edited_config_pangenomics.json file 
 3) created a new cyanobium-edited-external-genomes.txt
@@ -165,17 +155,22 @@ GCA01419165: low completion, missing many core gene clusters
 ```
 
 
-### Creating a new combined EDITED-CYANOBIUM-GENOMES.db file with MAGs and reduced genomes:
+Creating a new combined EDITED-CYANOBIUM-GENOMES.db file with MAGs and reduced genomes:
 ```{bash, eval=F}
 anvi-gen-genomes-storage -i dspeth_mags_external_genome.txt -e cyanobium-edited-external-genomes.txt -o EDITED-CYANOBIUM_GENOMES.db
+
 ```
 
-### Rerunning anvi-pan-genomes without crap genomes:
+rerunning anvi-pan-genomes without crap genoems:
 Generated the EDITED_CYANOBIUM_PAN project directory
 ```{bash, eval=F}
 anvi-pan-genome -g EDITED-CYANOBIUM_GENOMES.db --project-name Edited_Cyanobium_Pan --output-dir “edited_cyanobium_pan” --num-threads 4 --minbit 0.5 --mcl-inflation 6 --use-ncbi-blast
 ```
 
+<<<<<<< HEAD
+Creating a phylogenetic tree of cyanobium genomes + MAGS using GToTree:
+
+=======
 Displaying the pangenome after the edited version
 ```{bash, eval=F}
 anvi-display-pan -p EDITED-CYANOBIUM-PAN/Edited_Cyanobium_Pan-PAN.db -g EDITED-CYANOBIUM_GENOMES.db
@@ -185,16 +180,43 @@ anvi-display-pan -p EDITED-CYANOBIUM-PAN/Edited_Cyanobium_Pan-PAN.db -g EDITED-C
 ## GToTree
 
 ###Creating a phylogenetic tree of cyanobium genomes + MAGS using GToTree:
+>>>>>>> 943cd17480b4ebac49baa902a3fcf17bfa456234
 Creating a list of paths to contig fastas we will use:
 ```{bash, eval=F}
 cut -f 2 edited_cyanobium_fa.txt | grep -v path > gtotree_fasta_files.txt
 ```
+<<<<<<< HEAD
+Creating a list of names that gtotree will use 
+=======
 
 Creating a list of names that gtotree will use
+>>>>>>> 943cd17480b4ebac49baa902a3fcf17bfa456234
 ```{bash, eval=F}
 cut -f 1 edited_cyanobium_fa.txt | grep -v name > gtotree_accessions.txt
 ```
 
+<<<<<<< HEAD
+unwrapping wrapped MAG fasta files
+```{bash, eval=F}
+sed '/>/s/^/@/; />/s/$/@/' cyanobium_MAGs-contigs.fa | tr -d '\n' | tr '@' '\n' | grep -v '^$' > cyanobium_MAGs-contigs_unwrapped.fa 
+```
+
+separating MAGs into different files 
+```{bash, eval=F}
+grep -A 1 MLW cyanobium_MAGs-contigs_unwrapped.fa > cyanobium_MLW_MAG-contigs.fa
+
+grep -A 1 MLSC cyanobium_MAGs-contigs_unwrapped.fa > cyanobium_MLSC_MAG-contigs.fa
+```
+
+making gtotree have mags too
+```{bash, eval=F}
+ls | grep MAG- >> mag_files.txt
+cat gtotree_fasta_files.txt mag_files.txt > gtotree_fastas_mags.txt
+
+```
+
+Useful commands:  
+=======
 Unwrapping wrapped MAG fasta files
 ```{bash, eval=F}
 sed ‘/>/s/^/@/; />/s/$/@/’ cyanobium_MAGs-contigs.fa | tr -d ‘\n’ | tr ‘@’ ‘\n’ | grep -v ‘^$’ > cyanobium_MAGs-contigs_unwrapped.fa
@@ -225,15 +247,16 @@ This is creating a text file to put the phylogenetic tree that we created with G
 vi cyanobium_external_tree.txt
 ```
 
-
-# Identifying Gene Clusters of Interest
-
-GCA_007694915 is the most closely related genome from gene similarity to the water and sediment metagenomes.
-
+sed line to correct the gtotreenames
+sed edits in place
+```{bash, eval=F}
+sed -i"" 's/\.1-/_1_/g' cyanobium_external_tree.txt
+```
 
 
 ## Generally Useful commands: 
 ```{}
+>>>>>>> 943cd17480b4ebac49baa902a3fcf17bfa456234
 (put this in a seperate screen to run:
 screen -r to resume active session
 ctrl-a d to detach from a session
@@ -243,4 +266,3 @@ screen to make new session)
 cat cyanobium_gtotree.tre | pbcopy # print contents of a file and send it to your copy/paste board
 
 `top` to see what is running in a bash session 
-```
