@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Genome Data-Mining
-
 ### Download genomes from NCBI genbank + refseq that were then placed in the directories "genbank" and "refseq"
 
 ```{bash, eval = F}
