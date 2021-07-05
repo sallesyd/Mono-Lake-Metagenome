@@ -247,11 +247,121 @@ This is creating a text file to put the phylogenetic tree that we created with G
 vi cyanobium_external_tree.txt
 ```
 
+<<<<<<< HEAD
 sed line to correct the gtotreenames
 sed edits in place
 ```{bash, eval=F}
 sed -i"" 's/\.1-/_1_/g' cyanobium_external_tree.txt
 ```
+=======
+#Looking at the MAGs contigs-level mapping as an interactive view
+```{bash, eval=F}
+anvi-interactive -c cyanobium_MAGs-CONTIGS.db -p cyanobium_MAGs-MERGED/PROFILE.db
+```
+
+#Looking at the MAG gene-level mapping as an interactive view ordered by synteny (comparing 2 genes in order)
+Anvio uses synteny to put the genes in a sequential order (preserve gene order in the contig)
+We don't know if contig 2 follows contig 1, but we know that gene 2 follows gene 1 within a contig
+Inner axis spokes are individual genes in the order they appeared in the contig
+Therefore you can visualize groups of genes present/absent in different metagenomes in a preserved order (looking at genes and what is downstream of them)
+Now we can look at blocks of differences--segments of the genome all changes together or multiple diff places across the genome? Use this to understand population differences through time
+
+
+Ordered based on coverage: spokes=coverage of a gene across the metagenomes
+Dendrogram groupings=similar pattern of rareness unlike the rest of the genes 
+We can look at a gradient of gene rarity through depth
+Gradual change implies something a bit more informative than stochastic changes in gene abundance throughout sediment depth likely due to the randomness of what's getting sedimented 
+Can even go below the gene level and look at differential abundance of SNVs
+
+Huntin' for ancient genes! (What genes are more abundant in sediment thru time, not in water column)
+
+
+```{bash, eval=F}
+anvi-interactive --gene-mode -c cyanobium_MAGs-CONTIGS.db -p cyanobium_MAGs-MERGED/PROFILE.db -C MAGs -b MLSC1
+```
+
+
+# Identifying Gene Clusters of Interest
+
+GCA_007694915 is the most closely related genome from gene similarity to the water and sediment metagenomes.
+
+Similarity dendrogram clades (crated a pangenome_groups.tsv file with these) 
+
+Clade A:
+GCA_000708525
+GCA_009834675
+GCF_009834675
+GCA_000316515
+GCF_000316515
+
+Clade B: 
+GCA_014191755
+GCA_003249045
+GCA_003248995
+GCA_003249115
+
+Clade C:
+GCA_018399015
+GCA_007694915
+MLSC_0518_96_1
+MLW_09_17_24_1
+
+Clade D: 
+GCA_014280235
+GCF_014280235
+GCA_900088535
+GCF_900088535
+GCA_000155635
+GCF_000155635
+
+Clade E:
+GCA_014191535
+GCA_014697415
+GCF_014697415
+GCA_003011885
+GCF_003011885
+
+###Looking at enrichment of COG20_PATHWAY within similar groups in the pangenome 
+
+```{bash, eval=F}
+anvi-compute-functional-enrichment -p EDITED-CYANOBIUM-PAN/Edited_Cyanobium_Pan-PAN.db -g EDITED-CYANOBIUM_GENOMES.db --category group --annotation-source COG20_PATHWAY -o cyano_pan_enriched_pathway_similarity.txt --functional-occurrence-table-output cyano-pan-pathway-frequency.txt
+```
+
+##Same thing, but enrichment of COG20_FUNCTION
+
+```{bash, eval=F}
+anvi-compute-functional-enrichment -p EDITED-CYANOBIUM-PAN/Edited_Cyanobium_Pan-PAN.db -g EDITED-CYANOBIUM_GENOMES.db --category group --annotation-source COG20_FUNCTION -o cyano_pan_enriched_function_similarity.txt --functional-occurrence-table-output cyano-pan-funcion-frequency.txt
+```
+
+
+Got this warning due to small group sizes:
+WARNING
+==============================================================
+Some of your groups have very few genomes in them, so if you are running
+functional enrichment, the statistical test may not be very reliable. The
+minimal number of genomes in a group for the test to be reliable depends on a
+number of factors, but we recommend proceeding with great caution because the
+following groups have fewer than 8 genomes: D, E, B, C, A.
+
+
+###Inspecting MAGs 
+
+```{bash, eval=F}
+anvi-interactive --gene-mode -c cyanobium_MAGs-CONTIGS.db -p cyanobium_MAGs-MERGED/PROFILE.db -C MAGs -b MLSC1
+```
+
+###Exporting gene coverage and detection table (run command from ml_metagenomes/dspeth_cyano_bins)
+
+```{bash, eval=F}
+anvi-export-gene-coverage-and-detection -p cyanobium_MAGs-MERGED/PROFILE.db -c cyanobium_MAGs-CONTIGS.db -O cyanobium_MAGs
+```
+
+Output files: 
+cyanobium_MAGs-GENE-DETECTION.txt
+cyanobium_MAGs-GENE-COVERAGES.txt
+
+```{bash, eval=F}
+>>>>>>> c09a0e465ce2231119d59e4f27ea8e043c654fce
 
 
 ## Generally Useful commands: 
@@ -266,3 +376,11 @@ screen to make new session)
 cat cyanobium_gtotree.tre | pbcopy # print contents of a file and send it to your copy/paste board
 
 `top` to see what is running in a bash session 
+<<<<<<< HEAD
+=======
+```
+```{r}
+
+```
+
+>>>>>>> c09a0e465ce2231119d59e4f27ea8e043c654fce
