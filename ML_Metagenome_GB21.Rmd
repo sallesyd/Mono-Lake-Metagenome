@@ -372,6 +372,7 @@ Output files:
 cyanobium_MAGs-GENE-DETECTION.txt
 cyanobium_MAGs-GENE-COVERAGES.txt
 
+<<<<<<< HEAD
 ###Computing nucleotide identity for the pangenome 
 
 ```{bash, eval=F}
@@ -403,6 +404,11 @@ anvi-export-collection [-h] -p PAN_OR_PROFILE_DB [-C COLLECTION_NAME]
                        [--include-unbinned]
 
 #collection name is your bin name in interactive pangenome 
+=======
+This command is Hacker Dan's way of bypassing anvi'o being dumb and allowing us to pull the bins that I (Sydney) created in the merged MAGs MLSC1 to look for genes of interest that are not the same through time/environment.
+```{r}
+sqlite3 cyanobium_MAGs-MERGED/GENES/MAGs-MLSC1.db 'select * from collections_of_splits' | tr '|' '\t' > mlsc1_genes_binned.tsv
+>>>>>>> 9c3a8ea201bf735ff227e72c50a5c95b9edf5b8b
 ```
 
 
