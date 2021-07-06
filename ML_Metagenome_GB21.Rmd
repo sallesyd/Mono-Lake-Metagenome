@@ -325,6 +325,14 @@ GCF_014697415
 GCA_003011885
 GCF_003011885
 
+###Importing these clades as a layer of information on to the pangenome for further analysis
+
+```{bash, eval=F}
+anvi-import-misc-data -p EDITED-CYANOBIUM-PAN/Edited_Cyanobium_Pan-PAN.db -t layers pangenome_groups.tsv
+
+```
+
+
 ###Looking at enrichment of COG20_PATHWAY within similar groups in the pangenome 
 
 ```{bash, eval=F}
@@ -364,6 +372,40 @@ Output files:
 cyanobium_MAGs-GENE-DETECTION.txt
 cyanobium_MAGs-GENE-COVERAGES.txt
 
+###Computing nucleotide identity for the pangenome 
+
+```{bash, eval=F}
+
+ anvi-compute-genome-similarity -i dspeth_mags_external_genome.txt -e cyanobium-edited-external-genomes.txt -f fasta_paths.tsv -o pan_nucleotide_identity -p EDITED-CYANOBIUM-PAN/Edited_Cyanobium_Pan-PAN.db -T 6
+
+```
+
+###Computing SNV heterogenity for marker genes
+RPOB (1st), SecY (2nd if possible)
+-less likely to be horizontally transferred and typically single copy 
+-find rpoB gene caller ID in sediment MAG in interactive interface
+tell anvio to export
+download file, play with it in R
+quince mode -- outputs variability for all positions, even if its 0
+```{bash, eval=F}
+
+anvi-gen-variability-profile -p dspeth_cyano_bins/cyanobium_MAGs-MERGED/PROFILE.db -c dspeth_cyano_bins/cyanobium_MAGs-CONTIGS.db --gene-caller-id 1463 --quince-mode -o rpob_variability_profile
+
+```
+
+
+
+#exporting singleton genes only found in water column MAG
+
+```{r}
+anvi-export-collection [-h] -p PAN_OR_PROFILE_DB [-C COLLECTION_NAME]
+                       [-O FILENAME_PREFIX] [--list-collections]
+                       [--include-unbinned]
+
+#collection name is your bin name in interactive pangenome 
+```
+
+
 ```{bash, eval=F}
 (put this in a seperate screen to run:
 screen -r to resume active session
@@ -376,4 +418,10 @@ cat cyanobium_gtotree.tre | pbcopy # print contents of a file and send it to you
 `top` to see what is running in a bash session 
 ```
 
+Copying files to local machine with rsync:
+
+```{r}
+
+rsync yourname@ocean.caltech.edu:/path/to/file .
+```
 
