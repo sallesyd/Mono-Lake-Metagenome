@@ -1,0 +1,216 @@
+---
+title: "metagenome_plots"
+author: "maggie weng"
+date: "7/5/2021"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+loading packages
+
+```{r}
+library(tidyverse)
+library(RColorBrewer)
+```
+
+
+importing rpob data
+```{r}
+rpob <- read.csv("rpob_variability_profile.csv")
+ani <-read.csv("ANIb_full_percentage_identity.txt", sep = "\t", header=TRUE)
+
+dans_colors_master <- c("#FF0000","#F6A300","#0068CC","#6600AA","#AC0088","#AA33FF","#00FFFF","#00CC00","#006611","#00AC99",
+				 "#AC6844","#FFFF00","#991100","#ACAC11","#a0f0aa","#FF00FF","#FF8611","#B9F6F6","#001166","#AC9A00","#994141","#ff1169",
+				 "#0AF622","#119924","#Ac3311","#004A9A","#AcAc99","turquoise","tomato","sienna1","rosybrown","peachpuff",
+				 "olivedrab3","mistyrose1","mediumorchid","indianred2","#114914","#660011","ivory3","deeppink","#331111")
+plot_theme <- theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5), axis.text = element_text(color = "black"))
+
+#Overall theme 
+#bin_colors <- setNames(dans_colors_master[1:length(unique(cyano_regression$Bin))], unique(cyano_regression$Bin))
+#bin_colors['none'] <- 'black'
+
+```
+
+fixing ANI file because it used both fastas and the pan database
+```{r}
+ani2 <- ani[grep(".fa$", ani$key, invert=TRUE),
+            grep(".fa$", colnames(ani), invert=TRUE)] 
+
+
+#putting the contigs in inside-to-outside order for better heatmap
+rownames(ani2) <- ani2$key
+pangroups <- read.csv("pangenome_groups.tsv", sep="\t", header=TRUE)
+
+ani3 <- ani2[as.character(pangroups$samples), c("key", as.character(pangroups$samples))]
+
+
+write.table(ani3, file="ANIb_full_percentage_identity_pan.txt", sep="\t", col.names=TRUE, row.names=FALSE, quote=F)
+               
+```
+
+#visualizing rpob genetic diversity
+
+x-axis=samples
+y-axis=total SNP diversity for that sample
+visualizing the total amount of heterogeneity in the rpob gene in each sample
+sum the snp score for all positions for each sample, export as a vector, create new df with total_heterogenity and sample, then plot the df 
+Mean of all snp sites in the gene across samples (good 1st approx)
+
+```{r}
+
+
+meansnps <- rpob %>% group_by(sample_id) %>% summarize(mean_entropy=mean(entropy, na.rm=TRUE))
+```
+
+plotting the mean Shannon entropy across all gene sites per sample
+
+```{r}
+#adding metadata to the meansnps df
+
+meansnps$depth <- as.numeric(as.character(gsub("^.*_","",as.character(meansnps$sample_id))))
+meansnps$env <- gsub("_.*$","",as.character(meansnps$sample_id))
+
+#bin_colors <- setNames(dans_colors_master[1:length(unique(cyano_regression$Bin))], unique(cyano_regression$Bin))
+#bin_colors['none'] <- 'black'
+#plot_theme <- theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = #0.5), axis.text = element_text(color = "black"))
+
+snp_plot <- ggplot(meansnps, aes(x=depth, y=mean_entropy, color=env)) +
+  geom_point() +
+  plot_theme +
+  geom_smooth(method="lm") +
+  scale_color_manual(values=c("chocolate4", "blue")) +
+  facet_wrap(~env, scales="free_x")
+print(snp_plot)
+```
+
+
+#plotting BeT SNP variability:
+
+```{r}
+dnak_bet <- read.csv("dnak_bet_variability_profile", sep="\t", header=TRUE)
+
+dank_snps <- dnak_bet %>% group_by(sample_id, corresponding_gene_call) %>%  summarize(mean_entropy=mean(entropy, na.rm=TRUE))
+
+dank_snps$depth <- as.numeric(as.character(gsub("^.*_","",as.character(dank_snps$sample_id))))
+dank_snps$env <- gsub("_.*$","",as.character(dank_snps$sample_id))
+
+
+bet_plot <- ggplot(dank_snps%>% filter(corresponding_gene_call=="1672"), aes(x=depth, y=mean_entropy, color=env)) +
+  geom_point() +
+  plot_theme +
+  geom_smooth(method="lm") +
+  scale_color_manual(values=c("chocolate4", "blue")) +
+  facet_wrap(~corresponding_gene_call, scales="free_x")
+print(bet_plot)
+
+
+```
+Plot of dnaK variability: 
+
+```{r}
+
+dank_plot <- ggplot(dank_snps%>% filter(!(corresponding_gene_call=="1672")), aes(x=depth, y=mean_entropy, color=env)) +
+  geom_point() +
+  plot_theme +
+  geom_smooth(method="lm") +
+  scale_color_manual(values=c("chocolate4", "blue")) +
+  facet_wrap(~corresponding_gene_call, scales="free_x")
+print(dank_plot)
+```
+
+
+#Deep dive into SNP variability by placement in gene
+
+Focus on sediment SNPs, if while it's decreasing in frequency what is happening to the other variants
+
+```{r}
+dank_sed <- dnak_bet %>% filter(corresponding_gene_call==2210) %>%
+  mutate(A=A/coverage, G=G/coverage, C=C/coverage, T=T/coverage, N=N/coverage, 
+         depth=gsub("^.*_","",sample_id))
+
+dank_sed <- melt(dank_sed, measure.vars = c("A","T","G","C","N"),
+                      variable.name = 'nucleotide',value.name = 'proportion') 
+
+dank_sed$proportion[is.na(dank_sed$proportion)] <- 0
+
+
+ancient_dank_plot <- ggplot(dank_sed[grepl("MLSC", dank_sed$sample_id) & (dank_sed$coverage >= 10),], aes(x=factor(pos), y=proportion, fill=nucleotide)) +
+  geom_col(color="black", size=0.1)+
+  facet_grid(depth~.) +
+  scale_fill_brewer(palette="Paired", type="div")
+  plot_theme
+
+print(ancient_dank_plot)
+
+dank_zoom <- ggplot(dank_sed[grepl("MLSC", dank_sed$sample_id) & (dank_sed$pos >8100) & (dank_sed$pos < 8150) & (dank_sed$coverage >= 10),], aes(x=pos, y=proportion, fill=nucleotide)) +
+  geom_col(color="black", size=0.1)+
+  facet_grid(depth~.) +
+  scale_fill_brewer(palette="Paired", type="div") +
+  plot_theme
+
+#to eliminate white spaces w/ no variants do aes(x=factor(pos)
+
+```
+
+plot of variance for BeT and then diving into amino acid sequences:
+
+```{r}
+bet_var <- dnak_bet %>% filter(corresponding_gene_call==1672) %>%
+  mutate(A=A/coverage, G=G/coverage, C=C/coverage, T=T/coverage, N=N/coverage, 
+         depth=gsub("^.*_","",sample_id),
+         env=gsub("_.*$","",(sample_id)))
+
+
+
+bet_var <- melt(bet_var, measure.vars = c("A","T","G","C","N"),
+                      variable.name = 'nucleotide',value.name = 'proportion') 
+
+bet_var$proportion[is.na(bet_var$proportion)] <- 0
+
+bet_var_plot <- ggplot(bet_var[(bet_var$coverage >= 10),], aes(x=factor(pos), y=proportion, fill=nucleotide)) +
+  geom_col(color="black", size=0.1)+
+  facet_grid(sample_id+env+depth~.) +
+  scale_fill_brewer(palette="Paired", type="div") 
+  plot_theme
+
+bet_var_plot
+
+```
+
+
+studying amino acid variability in BeT:
+
+
+```{r}
+bet_aa <- read.csv("bet_aa_variability_profile", sep = "\t", header=TRUE)
+bet_aa[,grep("^...$", colnames(bet_aa))] <- t(apply(bet_aa[,grep("^...$",colnames(bet_aa))],
+                                                    1, function(x) x/sum(x, na.rm = T)))
+bet_aa_var <- melt(bet_aa,
+                   measure.vars = grep("^...$", colnames(bet_aa), value = T),
+                   variable.name = 'aa', value.name = 'proportion') 
+
+bet_aa_var <- bet_aa_var %>% mutate(depth=gsub("^.*_","",sample_id),
+                      env=gsub("_.*$","", sample_id))
+
+bet_aa_var$proportion[is.na(bet_aa_var$proportion)] <- 0
+#bet_aa_var$proportion <- as.numeric(as.character(bet_aa_var$proportion))
+
+bet_aa_plot <- ggplot(bet_aa_var[(bet_aa_var$coverage >= 5),], 
+                      aes(x=factor(codon_number), y=proportion, fill=aa)) +
+  geom_col(color="black", size=0.1)+
+  facet_grid(sample_id+env+depth~.) +
+  scale_fill_manual(values =dans_colors_master) +
+  plot_theme
+
+```
+
+
+
+
+
